@@ -39,7 +39,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="AsyncTask"
+                android:text="BindService"
                 android:textSize="30sp" />
 
             <Button
@@ -55,6 +55,34 @@
                 android:layout_height="wrap_content"
                 android:onClick="OnClick"
                 android:text="Get student" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="JobScheduler"
+                android:textSize="30sp" />
+
+            <Button
+                android:id="@+id/button5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="OnClick"
+                android:text="Schedule job" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="JobIntentService"
+                android:textSize="30sp" />
+
+            <Button
+                android:id="@+id/button6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="OnClick"
+                android:text="Enqueue work" />
 
         </LinearLayout>
     </ScrollView>

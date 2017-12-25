@@ -1,77 +1,35 @@
 package ua.com.webacademy.beginnerslection12;
 
-import android.app.Activity;
-import android.app.IntentService;
-import android.app.PendingIntent;
-import android.content.Context;
+import android.app.Service;
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
+import android.os.Binder;
+import android.os.IBinder;
 
-public class StudentService extends IntentService {
-    public static final String ACTION_SAVE_STUDENT = "ua.com.webacademy.beginnerslection12.action.SAVE_STUDENT";
-    public static final String ACTION_GET_STUDENT = "ua.com.webacademy.beginnerslection12.action.GET_STUDENT";
+public class StudentService extends Service {
 
-    public static final String EXTRA_STUDENT = "ua.com.webacademy.beginnerslection12.extra.STUDENT";
-    public static final String EXTRA_ID = "ua.com.webacademy.beginnerslection12.extra.ID";
-    public static final String EXTRA_PENDING_INTENT = "ua.com.webacademy.beginnerslection12.extra.PENDING_INTENT";
-
-    public static final int REQUEST_CODE_SAVE_STUDENT = 1;
-    public static final int REQUEST_CODE_GET_STUDENT = 2;
-
-    public static void insertStudent(Context context, Student student) {
-        Intent intent = new Intent(context, StudentService.class);
-
-        PendingIntent pendingIntent = ((AppCompatActivity) context).createPendingResult(REQUEST_CODE_SAVE_STUDENT, intent, 0);
-        intent.putExtra(EXTRA_PENDING_INTENT, pendingIntent);
-
-        intent.setAction(ACTION_SAVE_STUDENT);
-        intent.putExtra(EXTRA_STUDENT, student);
-
-        context.startService(intent);
-    }
-
-    public static void getStudent(Context context, long id) {
-        Intent intent = new Intent(context, StudentService.class);
-
-        PendingIntent pendingIntent = ((AppCompatActivity) context).createPendingResult(REQUEST_CODE_GET_STUDENT, intent, 0);
-        intent.putExtra(EXTRA_PENDING_INTENT, pendingIntent);
-
-        intent.setAction(ACTION_GET_STUDENT);
-        intent.putExtra(EXTRA_ID, id);
-
-        context.startService(intent);
-    }
+    private ServiceBinder mBinder;
 
     public StudentService() {
-        super("StudentService");
+        mBinder = new ServiceBinder();
+    }
+
+    public long saveStudent(Student student) {
+
+        return new DataBaseHelper(getApplicationContext()).insertStudent((student));
+    }
+
+    public Student getStudent(long id) {
+        return new DataBaseHelper(getApplicationContext()).getStudent(id);
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
-        if (intent != null) {
-            DataBaseHelper helper = new DataBaseHelper(getApplicationContext());
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
 
-            PendingIntent pendingIntent = intent.getParcelableExtra(EXTRA_PENDING_INTENT);
-            Intent resultIntent = new Intent();
-
-            final String action = intent.getAction();
-            if (ACTION_SAVE_STUDENT.equals(action)) {
-                Student student = intent.getParcelableExtra(EXTRA_STUDENT);
-                long id = helper.insertStudent(student);
-
-                resultIntent.putExtra(EXTRA_ID, id);
-            } else if (ACTION_GET_STUDENT.equals(action)) {
-                long id = intent.getLongExtra(EXTRA_ID, 0);
-                Student student = helper.getStudent(id);
-
-                resultIntent.putExtra(EXTRA_STUDENT, student);
-            }
-
-            try {
-                pendingIntent.send(this, Activity.RESULT_OK, resultIntent);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+    class ServiceBinder extends Binder {
+        public StudentService getService() {
+            return StudentService.this;
         }
     }
 }

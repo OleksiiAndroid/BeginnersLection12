@@ -1,23 +1,22 @@
 package ua.com.webacademy.beginnerslection12;
 
-import android.app.PendingIntent;
 import android.app.ProgressDialog;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.PersistableBundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
-
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
     private ProgressDialog mDialog;
-
-    private SaveTask mSaveTask;
-    private GetTask mGetTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,20 +24,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-        if (mSaveTask != null) {
-            mSaveTask.cancel(true);
-        }
-        if (mGetTask != null) {
-            mGetTask.cancel(true);
-        }
-    }
-
     public void OnClick(View v) {
-        Student student;
+        final Student student;
 
         switch (v.getId()) {
             case R.id.button:
@@ -48,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
                 mDialog.show();
 
                 student = new Student("Ivan", "Ivanov", 22);
-                StudentService.insertStudent(this, student);
+                StudentIntentService.insertStudent(this, student);
                 break;
             case R.id.button2:
                 mDialog = new ProgressDialog(this);
@@ -56,17 +43,64 @@ public class MainActivity extends AppCompatActivity {
                 mDialog.setCancelable(false);
                 mDialog.show();
 
-                StudentService.getStudent(this, 1);
+                StudentIntentService.getStudent(this, 1);
                 break;
-            case R.id.button3:
-                student = new Student("Ivan", "Ivanov", 22);
+            case R.id.button3: {
+                ServiceConnection connection = new ServiceConnection() {
+                    @Override
+                    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+                        StudentService studentService = ((StudentService.ServiceBinder) iBinder).getService();
 
-                mSaveTask = new SaveTask();
-                mSaveTask.execute(student);
+                        long id = studentService.saveStudent(new Student("Ivan", "Ivanov", 22));
+                        Toast.makeText(MainActivity.this, "id:" + id, Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onServiceDisconnected(ComponentName componentName) {
+
+                    }
+                };
+
+                Intent intent = new Intent(this, StudentService.class);
+                bindService(intent, connection, BIND_AUTO_CREATE);
+            }
+            break;
+            case R.id.button4: {
+                ServiceConnection connection = new ServiceConnection() {
+                    @Override
+                    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+                        StudentService studentService = ((StudentService.ServiceBinder) iBinder).getService();
+
+                        Student student = studentService.getStudent(1);
+                        Toast.makeText(MainActivity.this, student.FirstName, Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onServiceDisconnected(ComponentName componentName) {
+
+                    }
+                };
+
+                Intent intent = new Intent(this, StudentService.class);
+                bindService(intent, connection, BIND_AUTO_CREATE);
+            }
+            break;
+            case R.id.button5:
+                PersistableBundle bundle = new PersistableBundle();
+                bundle.putString(MyJobService.KEY_TEXT, "Some text");
+
+                ComponentName serviceName = new ComponentName(this, MyJobService.class);
+                JobInfo jobInfo = new JobInfo.Builder(1, serviceName)
+                        .setMinimumLatency(10)
+                        .setOverrideDeadline(20)
+                        .setExtras(bundle)
+                        .build();
+
+                JobScheduler scheduler = (JobScheduler) getSystemService(Context.JOB_SCHEDULER_SERVICE);
+                scheduler.schedule(jobInfo);
                 break;
-            case R.id.button4:
-                mGetTask = new GetTask();
-                mGetTask.execute(2l);
+            case R.id.button6:
+                MyJobIntentService.doSomething(this, "Some text");
                 break;
         }
     }
@@ -76,103 +110,17 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (resultCode == RESULT_OK) {
-            if (requestCode == StudentService.REQUEST_CODE_SAVE_STUDENT) {
-                long id = data.getLongExtra(StudentService.EXTRA_ID, 0);
+            if (requestCode == StudentIntentService.REQUEST_CODE_SAVE_STUDENT) {
+                long id = data.getLongExtra(StudentIntentService.EXTRA_ID, 0);
                 Toast.makeText(this, "id:" + id, Toast.LENGTH_SHORT).show();
-            } else if (requestCode == StudentService.REQUEST_CODE_GET_STUDENT) {
-                Student student = data.getParcelableExtra(StudentService.EXTRA_STUDENT);
+            } else if (requestCode == StudentIntentService.REQUEST_CODE_GET_STUDENT) {
+                Student student = data.getParcelableExtra(StudentIntentService.EXTRA_STUDENT);
                 Toast.makeText(this, student.FirstName, Toast.LENGTH_SHORT).show();
             }
         }
 
         if (mDialog != null && mDialog.isShowing()) {
             mDialog.dismiss();
-        }
-    }
-
-    class SaveTask extends AsyncTask<Student, Void, Long> {
-
-        private ProgressDialog mDialog;
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            mDialog = new ProgressDialog(MainActivity.this);
-            mDialog.setMessage("Wait...");
-            mDialog.setCancelable(false);
-            mDialog.show();
-        }
-
-        @Override
-        protected Long doInBackground(Student... params) {
-            long id = 0;
-
-            try {
-                Student student = params[0];
-
-                DataBaseHelper helper = new DataBaseHelper(MainActivity.this);
-                id = helper.insertStudent(student);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return id;
-        }
-
-        @Override
-        protected void onPostExecute(Long result) {
-            super.onPostExecute(result);
-
-            if (mDialog != null && mDialog.isShowing()) {
-                mDialog.dismiss();
-            }
-
-            Toast.makeText(MainActivity.this, "id:" + result, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    class GetTask extends AsyncTask<Long, Void, Student> {
-
-        private ProgressDialog mDialog;
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            mDialog = new ProgressDialog(MainActivity.this);
-            mDialog.setMessage("Wait...");
-            mDialog.setCancelable(false);
-            mDialog.show();
-        }
-
-        @Override
-        protected Student doInBackground(Long... params) {
-            Student student = null;
-
-            try {
-                long id = params[0];
-
-                DataBaseHelper helper = new DataBaseHelper(MainActivity.this);
-                student = helper.getStudent(id);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return student;
-        }
-
-        @Override
-        protected void onPostExecute(Student result) {
-            super.onPostExecute(result);
-
-            if (mDialog != null && mDialog.isShowing()) {
-                mDialog.dismiss();
-            }
-
-            if (result == null) {
-                Toast.makeText(MainActivity.this, "Student not found", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(MainActivity.this, result.FirstName, Toast.LENGTH_SHORT).show();
-            }
         }
     }
 }
