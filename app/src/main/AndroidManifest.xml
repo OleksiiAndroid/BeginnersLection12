@@ -3,6 +3,7 @@
     package="ua.com.webacademy.beginnerslection12">
 
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <application
         android:allowBackup="true"
@@ -19,21 +20,20 @@
         </activity>
 
         <service
-            android:name=".StudentIntentService"
-            android:exported="false" />
-
-        <service
-            android:name=".StudentService"
-            android:enabled="true" />
-
-        <service
             android:name=".MyJobService"
             android:enabled="true"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <service
             android:name=".MyJobIntentService"
-            android:enabled="true" />
+            android:enabled="true"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <provider
+            android:enabled="true"
+            android:exported="true"
+            android:authorities="ua.com.webacademy.beginnerslection12"
+            android:name=".StudentsProvider" />
     </application>
 
 </manifest>

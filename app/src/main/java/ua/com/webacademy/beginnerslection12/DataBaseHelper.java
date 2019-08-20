@@ -20,6 +20,11 @@ public class DataBaseHelper extends SQLiteOpenHelper {
                 + Student.COLUMN_FIRST_NAME + " TEXT NOT NULL,"
                 + Student.COLUMN_LAST_NAME + " TEXT NOT NULL,"
                 + Student.COLUMN_AGE + " INTEGER NOT NULL);");
+
+        for (int i = 0; i < 20; i++) {
+            Student student = new Student("Ivan" + i, "Ivanov" + i, 20 + i);
+            insertStudent(student, db);
+        }
     }
 
     @Override
@@ -28,8 +33,13 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     }
 
     public long insertStudent(Student student) {
-        long id = 0;
         SQLiteDatabase db = getWritableDatabase();
+
+        return insertStudent(student, db);
+    }
+
+    public long insertStudent(Student student, SQLiteDatabase db) {
+        long id = 0;
 
         try {
             ContentValues values = new ContentValues();

@@ -1,18 +1,33 @@
 package ua.com.webacademy.beginnerslection12;
 
+import android.Manifest;
 import android.app.ProgressDialog;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.os.PersistableBundle;
-import android.support.v7.app.AppCompatActivity;
+import android.provider.ContactsContract;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.Observer;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
+
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -25,66 +40,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void OnClick(View v) {
-        final Student student;
-
         switch (v.getId()) {
-            case R.id.button:
-                mDialog = new ProgressDialog(this);
-                mDialog.setMessage("Wait...");
-                mDialog.setCancelable(false);
-                mDialog.show();
-
-                student = new Student("Ivan", "Ivanov", 22);
-                StudentIntentService.insertStudent(this, student);
-                break;
-            case R.id.button2:
-                mDialog = new ProgressDialog(this);
-                mDialog.setMessage("Wait...");
-                mDialog.setCancelable(false);
-                mDialog.show();
-
-                StudentIntentService.getStudent(this, 1);
-                break;
-            case R.id.button3: {
-                ServiceConnection connection = new ServiceConnection() {
-                    @Override
-                    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-                        StudentService studentService = ((StudentService.ServiceBinder) iBinder).getService();
-
-                        long id = studentService.saveStudent(new Student("Ivan", "Ivanov", 22));
-                        Toast.makeText(MainActivity.this, "id:" + id, Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onServiceDisconnected(ComponentName componentName) {
-
-                    }
-                };
-
-                Intent intent = new Intent(this, StudentService.class);
-                bindService(intent, connection, BIND_AUTO_CREATE);
-            }
-            break;
-            case R.id.button4: {
-                ServiceConnection connection = new ServiceConnection() {
-                    @Override
-                    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-                        StudentService studentService = ((StudentService.ServiceBinder) iBinder).getService();
-
-                        Student student = studentService.getStudent(1);
-                        Toast.makeText(MainActivity.this, student.FirstName, Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onServiceDisconnected(ComponentName componentName) {
-
-                    }
-                };
-
-                Intent intent = new Intent(this, StudentService.class);
-                bindService(intent, connection, BIND_AUTO_CREATE);
-            }
-            break;
             case R.id.button5:
                 PersistableBundle bundle = new PersistableBundle();
                 bundle.putString(MyJobService.KEY_TEXT, "Some text");
@@ -102,25 +58,127 @@ public class MainActivity extends AppCompatActivity {
             case R.id.button6:
                 MyJobIntentService.doSomething(this, "Some text");
                 break;
+            case R.id.button7:
+                if (hasPermission(Manifest.permission.READ_CONTACTS)) {
+                    ArrayList<String> contacts = getContacts();
+                    Toast.makeText(this, String.format("Contacts count:%s", contacts.size()), Toast.LENGTH_LONG).show();
+                } else {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        String[] permissions = {
+                                Manifest.permission.READ_CONTACTS
+                        };
+
+                        requestPermissions(permissions, 0);
+                    }
+                }
+                break;
+            case R.id.button8:
+                ArrayList<Student> students = getStudents();
+                Toast.makeText(this, String.format("Students count:%s", students.size()), Toast.LENGTH_LONG).show();
+                break;
+            case R.id.button9: {
+                OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(MyWorker.class).build();
+                WorkManager.getInstance().enqueue(request);
+
+                LiveData<WorkInfo> info = WorkManager.getInstance().getWorkInfoByIdLiveData(request.getId());
+                info.observe(this, new Observer<WorkInfo>() {
+                    @Override
+                    public void onChanged(@Nullable WorkInfo workInfo) {
+                        Log.d("workmng", "MyWorker onChanged " + Thread.currentThread().getName() + " " + workInfo.getState());
+                    }
+                });
+            }
+            break;
+            case R.id.button10: {
+                Data input = new Data.Builder()
+                        .putString("InputData", "input data")
+                        .build();
+
+                OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(MyWorker2.class)
+                        .setInputData(input)
+                        .build();
+
+                WorkManager.getInstance().enqueue(request);
+
+                LiveData<WorkInfo> info = WorkManager.getInstance().getWorkInfoByIdLiveData(request.getId());
+                info.observe(this, new Observer<WorkInfo>() {
+                    @Override
+                    public void onChanged(@Nullable WorkInfo workInfo) {
+                        Log.d("workmng", "MyWorker2 onChanged " + Thread.currentThread().getName() + " " + workInfo.getState());
+                        if (workInfo.getState().equals(WorkInfo.State.SUCCEEDED))
+                            Log.d("workmng", "Out data: " + workInfo.getOutputData().getString("OutData"));
+                    }
+                });
+            }
+            break;
         }
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    private boolean hasPermission(String permission) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED;
+        }
 
-        if (resultCode == RESULT_OK) {
-            if (requestCode == StudentIntentService.REQUEST_CODE_SAVE_STUDENT) {
-                long id = data.getLongExtra(StudentIntentService.EXTRA_ID, 0);
-                Toast.makeText(this, "id:" + id, Toast.LENGTH_SHORT).show();
-            } else if (requestCode == StudentIntentService.REQUEST_CODE_GET_STUDENT) {
-                Student student = data.getParcelableExtra(StudentIntentService.EXTRA_STUDENT);
-                Toast.makeText(this, student.FirstName, Toast.LENGTH_SHORT).show();
+        return true;
+    }
+
+    private ArrayList<Student> getStudents() {
+        ArrayList<Student> students = new ArrayList<>();
+        Cursor cursor = null;
+
+        try {
+            Uri uri = Uri.parse("content://ua.com.webacademy.beginnerslection12/students");
+
+            cursor = getContentResolver().query(uri, null, null, null, null);
+
+            if (cursor.moveToFirst()) {
+                while (!cursor.isAfterLast()) {
+                    Student student = new Student();
+
+                    student.id = cursor.getLong(cursor.getColumnIndex("_id"));
+                    student.FirstName = cursor.getString(cursor.getColumnIndex("FirstName"));
+                    student.LastName = cursor.getString(cursor.getColumnIndex("LastName"));
+                    student.Age = cursor.getLong(cursor.getColumnIndex("Age"));
+
+                    students.add(student);
+
+                    cursor.moveToNext();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
             }
         }
 
-        if (mDialog != null && mDialog.isShowing()) {
-            mDialog.dismiss();
+        return students;
+    }
+
+    private ArrayList<String> getContacts() {
+        ArrayList<String> names = new ArrayList<>();
+        Cursor cursor = null;
+
+        try {
+            cursor = getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                    new String[]{ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME}, null, null, null);
+
+            if (cursor.moveToFirst()) {
+                while (!cursor.isAfterLast()) {
+                    names.add(cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)));
+
+                    cursor.moveToNext();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
+
+        return names;
     }
 }

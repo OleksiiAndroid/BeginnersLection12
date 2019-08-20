@@ -18,48 +18,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="IntentService"
-                android:textSize="30sp" />
-
-            <Button
-                android:id="@+id/button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:onClick="OnClick"
-                android:text="Save student" />
-
-            <Button
-                android:id="@+id/button2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:onClick="OnClick"
-                android:text="Get student" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="BindService"
-                android:textSize="30sp" />
-
-            <Button
-                android:id="@+id/button3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:onClick="OnClick"
-                android:text="Save student" />
-
-            <Button
-                android:id="@+id/button4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:onClick="OnClick"
-                android:text="Get student" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
                 android:text="JobScheduler"
                 android:textSize="30sp" />
 
@@ -83,6 +41,49 @@
                 android:layout_height="wrap_content"
                 android:onClick="OnClick"
                 android:text="Enqueue work" />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="WorkManager"
+                android:textSize="30sp" />
+
+            <Button
+                android:id="@+id/button9"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="OnClick"
+                android:text="doWork" />
+
+            <Button
+                android:id="@+id/button10"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="OnClick"
+                android:text="doWork  with parameters" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Content Provider"
+                android:textSize="30sp" />
+
+            <Button
+                android:id="@+id/button7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="OnClick"
+                android:text="Load contacts" />
+
+            <Button
+                android:id="@+id/button8"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="OnClick"
+                android:text="Load students" />
 
         </LinearLayout>
     </ScrollView>
